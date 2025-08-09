@@ -113,19 +113,12 @@ const Motivasyonum = () => {
     // Skip saving if we're currently saving or if it's the initial load
     if (isSaving || initialLoad) return;
     
-    // Show spinner immediately when user makes changes
-    setShowSpinner(true);
-    
     const timeoutId = setTimeout(() => {
       saveMotivation(overallHappiness, motivationFun, motivationMusic);
     }, 1000); // Set to 1 second as requested
 
     return () => {
       clearTimeout(timeoutId);
-      // If component unmounts or effect re-runs, hide spinner
-      if (!isSaving) {
-        setTimeout(() => setShowSpinner(false), 100);
-      }
     };
   }, [overallHappiness, motivationFun, motivationMusic, saveMotivation, initialLoad, isSaving]);
 
@@ -133,6 +126,11 @@ const Motivasyonum = () => {
   const handleFunChange = (event, newValue) => {
     const validFun = Math.round(Math.max(0, Math.min(10, newValue)));
     const validMusic = 10 - validFun;
+    
+    // Show spinner immediately when user interacts
+    if (!initialLoad) {
+      setShowSpinner(true);
+    }
     
     setMotivationFun(validFun);
     setMotivationMusic(validMusic);
@@ -143,6 +141,11 @@ const Motivasyonum = () => {
     const validMusic = Math.round(Math.max(0, Math.min(10, newValue)));
     const validFun = 10 - validMusic;
     
+    // Show spinner immediately when user interacts
+    if (!initialLoad) {
+      setShowSpinner(true);
+    }
+    
     setMotivationMusic(validMusic);
     setMotivationFun(validFun);
   };
@@ -150,6 +153,12 @@ const Motivasyonum = () => {
   // Handle overall happiness change
   const handleHappinessChange = (event, newValue) => {
     const validHappiness = Math.round(Math.max(1, Math.min(10, newValue)));
+    
+    // Show spinner immediately when user interacts
+    if (!initialLoad) {
+      setShowSpinner(true);
+    }
+    
     setOverallHappiness(validHappiness);
   };
 
