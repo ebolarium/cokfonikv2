@@ -140,11 +140,11 @@ const Login = () => {
   };
 
   return (
-    <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100vh" px={2}>
-      <Box mb={2}>
-        <img src={logo} alt="Cokfonik Logo" style={{ width: '150px', height: 'auto' }} />
+    <Box display="flex" flexDirection="column" alignItems="center" height="100vh" px={2} pt={4}>
+      <Box flex="1" display="flex" alignItems="center" justifyContent="center" maxHeight="30vh">
+        <img src={logo} alt="Cokfonik Logo" style={{ width: '250px', height: 'auto', maxWidth: '80vw' }} />
       </Box>
-      <Box width="100%" maxWidth="400px" p={3} borderRadius={2} boxShadow={3} bgcolor="white">
+      <Box width="100%" maxWidth="400px" p={3} borderRadius={2} boxShadow={3} bgcolor="white" mb={4}>
         <Tabs value={activeTab} onChange={handleTabChange} centered>
           <Tab label="Giriş" />
           <Tab label="Kayıt" />

@@ -2,6 +2,7 @@
 class ApiClient {
   constructor() {
     this.baseURL = process.env.REACT_APP_API_URL;
+    console.log('🔧 API Client initialized with baseURL:', this.baseURL);
   }
 
   // Get auth token from localStorage
