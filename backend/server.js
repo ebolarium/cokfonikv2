@@ -18,6 +18,17 @@ const Fee = require('./models/Fee'); // Aidat modeli
 const Announcement = require('./models/Announcement'); // Announcement modeli
 
 const app = express();
+
+// Global request logger
+app.use((req, res, next) => {
+  console.log(`📨 ${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log(`📨 Headers: Origin=${req.headers.origin}, User-Agent=${req.headers['user-agent']?.substring(0, 50)}...`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log(`📨 Body keys: ${Object.keys(req.body).join(', ')}`);
+  }
+  next();
+});
+
 app.use(cors());
 app.use(express.json());
 
@@ -156,6 +167,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Login Endpoint
 app.post('/api/login', async (req, res) => {
+  console.log('🚪 Login endpoint hit - Email:', req.body.email);
   const { email, password } = req.body;
 
   try {
