@@ -35,10 +35,14 @@ class ApiClient {
     };
 
     try {
+      console.log(`🌐 API Call: ${config.method || 'GET'} ${url}`);
       const response = await fetch(url, config);
+      console.log(`📡 Response: ${response.status} ${response.statusText}`);
       
       // Handle authentication errors
       if (response.status === 401) {
+        console.log('❌ 401 Unauthorized - Token expired or invalid');
+        console.log('🧹 Clearing localStorage and redirecting to login');
         // Token expired or invalid, redirect to login
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
@@ -147,7 +151,11 @@ class ApiClient {
   isAuthenticated() {
     const token = this.getAuthToken();
     const user = localStorage.getItem('user');
-    return !!(token && user);
+    console.log('🔐 Auth check - Token:', token ? 'Present' : 'Missing');
+    console.log('🔐 Auth check - User:', user ? 'Present' : 'Missing');
+    const isAuth = !!(token && user);
+    console.log('🔐 Auth result:', isAuth);
+    return isAuth;
   }
 
   // Get current user from localStorage

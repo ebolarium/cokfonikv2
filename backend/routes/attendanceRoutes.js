@@ -122,10 +122,9 @@ router.post('/excuse/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'Bu işlem için yetkiniz yok.' });
     }
 
-    // Hem 'BEKLEMEDE' hem de 'Bekleniyor' durumlarını kabul et
+    // Sadece 'GELMEDI' ve 'BEKLEMEDE' durumlarını kabul et
     if (attendance.status !== 'GELMEDI' && 
-        attendance.status !== 'BEKLEMEDE' && 
-        attendance.status !== 'Bekleniyor') {
+        attendance.status !== 'BEKLEMEDE') {
       return res.status(400).json({ 
         message: `Bu kayıt için mazeret bildirilemez. Mevcut durum: ${attendance.status}` 
       });
