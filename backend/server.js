@@ -202,6 +202,7 @@ app.post('/api/login', async (req, res) => {
     // Generate JWT token
     const jwt = require('jsonwebtoken');
     const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_dev_only';
+    console.log('🔑 Login - JWT_SECRET exists:', !!process.env.JWT_SECRET, 'Length:', JWT_SECRET.length);
     
     const token = jwt.sign(
       { 
@@ -212,6 +213,8 @@ app.post('/api/login', async (req, res) => {
       JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    console.log('🎫 Token generated for user:', user.email, 'TokenLength:', token.length);
 
     // Return user without password
     const userResponse = user.toObject();
