@@ -5,10 +5,8 @@ const User = require('../models/User');
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.header('Authorization');
-    console.log('🔐 Auth middleware - Header received:', authHeader ? 'Bearer ***' : 'No header');
     
     if (!authHeader) {
-      console.log('❌ Auth failed: No token provided');
       return res.status(401).json({ 
         message: 'Access denied. No token provided.',
         code: 'NO_TOKEN'
@@ -20,7 +18,6 @@ const authenticateToken = async (req, res, next) => {
       : authHeader;
 
     if (!token) {
-      console.log('❌ Auth failed: Invalid token format');
       return res.status(401).json({ 
         message: 'Access denied. Invalid token format.',
         code: 'INVALID_FORMAT'
@@ -28,25 +25,19 @@ const authenticateToken = async (req, res, next) => {
     }
 
     const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_dev_only';
-    console.log('🔑 JWT_SECRET exists:', !!process.env.JWT_SECRET, 'Length:', JWT_SECRET.length);
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('✅ Token decoded successfully for user:', decoded.userId);
     
     // Get full user data from database
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
-      console.log('❌ Auth failed: User not found in DB for ID:', decoded.userId);
       return res.status(401).json({ 
         message: 'Access denied. User not found.',
         code: 'USER_NOT_FOUND'
       });
     }
 
-    console.log('👤 User found:', user.email, 'Approved:', user.approved, 'Frozen:', user.frozen);
-
     // Check if user is approved and not frozen
     if (!user.approved) {
-      console.log('❌ Auth failed: Account not approved');
       return res.status(403).json({ 
         message: 'Access denied. Account not approved.',
         code: 'NOT_APPROVED'
@@ -54,20 +45,17 @@ const authenticateToken = async (req, res, next) => {
     }
 
     if (user.frozen) {
-      console.log('❌ Auth failed: Account is frozen');
       return res.status(403).json({ 
         message: 'Access denied. Account is frozen.',
         code: 'ACCOUNT_FROZEN'
       });
     }
 
-    console.log('✅ Auth successful for user:', user.email);
     req.user = user;
     req.userId = user._id;
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
-      console.log('❌ Auth failed: Invalid token -', error.message);
       return res.status(401).json({ 
         message: 'Access denied. Invalid token.',
         code: 'INVALID_TOKEN'
@@ -75,14 +63,13 @@ const authenticateToken = async (req, res, next) => {
     }
     
     if (error.name === 'TokenExpiredError') {
-      console.log('❌ Auth failed: Token expired -', error.message);
       return res.status(401).json({ 
         message: 'Access denied. Token expired.',
         code: 'TOKEN_EXPIRED'
       });
     }
 
-    console.error('❌ Authentication middleware error:', error);
+    console.error('Authentication middleware error:', error);
     return res.status(500).json({ 
       message: 'Internal server error during authentication.',
       code: 'AUTH_ERROR'

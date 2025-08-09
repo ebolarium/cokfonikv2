@@ -150,9 +150,6 @@ const createDefaultAttendance = async (userId) => {
     // Only insert if there are records to insert
     if (attendanceRecords.length > 0) {
       await Attendance.insertMany(attendanceRecords);
-      console.log(`Created ${attendanceRecords.length} attendance records for user ${userId}`);
-    } else {
-      console.log(`No future events found, skipping attendance creation for user ${userId}`);
     }
   } catch (error) {
     console.error('Error creating default attendance:', error);
@@ -204,14 +201,12 @@ router.post('/register', async (req, res) => {
     });
 
     await newUser.save();
-    console.log('User saved successfully:', newUser._id);
 
     // Aidat ve devamsızlık işlemleri
     try {
       const { month, year } = getCurrentMonthAndYear();
       const fee = new Fee({ userId: newUser._id, month, year });
       await fee.save();
-      console.log('Fee created successfully for user:', newUser._id);
     } catch (feeError) {
       console.error('Error creating fee:', feeError);
       // Continue registration even if fee creation fails

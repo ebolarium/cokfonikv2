@@ -2,31 +2,11 @@
 class ApiClient {
   constructor() {
     this.baseURL = process.env.REACT_APP_API_URL;
-    console.log('🔧 API Client initialized with baseURL:', this.baseURL);
   }
 
   // Get auth token from localStorage
   getAuthToken() {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      console.log('🎫 Token retrieved from localStorage - Length:', token.length);
-      console.log('🎫 Token starts with:', token.substring(0, 20) + '...');
-      console.log('🎫 Token ends with:', '...' + token.substring(token.length - 10));
-      
-      // Check for common token corruption issues
-      if (token.includes('\n') || token.includes('\r')) {
-        console.warn('⚠️ Token contains newline characters!');
-      }
-      if (token.includes(' ') && !token.startsWith('Bearer ')) {
-        console.warn('⚠️ Token contains spaces but is not a Bearer token!');
-      }
-      if (token.split('.').length !== 3) {
-        console.warn('⚠️ Token does not have 3 parts (invalid JWT format)!');
-      }
-    } else {
-      console.log('🎫 No token found in localStorage');
-    }
-    return token;
+    return localStorage.getItem('authToken');
   }
 
   // Get default headers including authentication
@@ -146,21 +126,8 @@ class ApiClient {
     });
 
     if (response.token) {
-      console.log('🎫 Login - Token received from server - Length:', response.token.length);
-      console.log('🎫 Login - Token starts with:', response.token.substring(0, 20) + '...');
-      console.log('🎫 Login - Token ends with:', '...' + response.token.substring(response.token.length - 10));
-      console.log('🎫 Login - Token parts count:', response.token.split('.').length);
-      
       localStorage.setItem('authToken', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      
-      // Verify token was stored correctly
-      const storedToken = localStorage.getItem('authToken');
-      console.log('🎫 Login - Token stored correctly:', storedToken === response.token);
-      if (storedToken !== response.token) {
-        console.error('❌ Token corruption detected during storage!');
-        console.log('Original length:', response.token.length, 'Stored length:', storedToken?.length);
-      }
     }
 
     return response;
@@ -183,11 +150,7 @@ class ApiClient {
   isAuthenticated() {
     const token = this.getAuthToken();
     const user = localStorage.getItem('user');
-    console.log('🔐 Auth check - Token:', token ? 'Present' : 'Missing');
-    console.log('🔐 Auth check - User:', user ? 'Present' : 'Missing');
-    const isAuth = !!(token && user);
-    console.log('🔐 Auth result:', isAuth);
-    return isAuth;
+    return !!(token && user);
   }
 
   // Get current user from localStorage
