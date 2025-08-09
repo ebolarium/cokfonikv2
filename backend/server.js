@@ -141,6 +141,16 @@ app.use('/api', subscriptionRoutes); // /api/subscribe
 const scoreRoutes = require('./routes/scoreRoutes');
 app.use('/api/scores', scoreRoutes);
 
+// Load motivation routes with error handling
+try {
+  const motivationRoutes = require('./routes/motivationRoutes');
+  app.use('/api/motivation', motivationRoutes);
+  console.log('✅ Motivation routes loaded successfully');
+} catch (error) {
+  console.error('❌ Error loading motivation routes:', error.message);
+  console.error(error.stack);
+}
+
 // Statik Dosya Yolu
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

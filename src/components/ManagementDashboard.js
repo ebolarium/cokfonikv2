@@ -18,6 +18,7 @@ import PaymentsIcon from '@mui/icons-material/Payments';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CloseIcon from '@mui/icons-material/Close';
 import apiClient from '../utils/apiClient';
@@ -64,6 +65,12 @@ const ManagementDashboard = () => {
       description: 'Duyuruları oluştur ve yönet',
       path: '/announcement-management',
       icon: <CampaignIcon />,
+    },
+    {
+      title: 'Motivasyon Analizi',
+      description: 'Koro motivasyon seviyelerini izle',
+      path: '/motivation-analytics',
+      icon: <PsychologyIcon />,
     },
   ];
 

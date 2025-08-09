@@ -24,6 +24,7 @@ import PersonOffIcon from '@mui/icons-material/PersonOff';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 
 const MasterAdminDashboard = () => {
   const navigate = useNavigate();
@@ -78,6 +79,12 @@ const MasterAdminDashboard = () => {
       description: 'Duyuruları oluştur ve yönet',
       path: '/announcement-management',
       icon: <CampaignIcon fontSize="large" />
+    },
+    {
+      title: 'Motivasyon Analizi',
+      description: 'Koro motivasyon seviyelerini izle',
+      path: '/motivation-analytics',
+      icon: <PsychologyIcon fontSize="large" />
     },
   ];
 

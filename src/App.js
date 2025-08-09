@@ -34,6 +34,8 @@ import apiClient from './utils/apiClient';
 import MidiPlayer from './components/MidiPlayer';
 import MusicManagement from './components/MusicManagement';
 import ResetPassword from './components/ResetPassword';
+import Motivasyonum from './components/Motivasyonum';
+import MotivationAnalytics from './components/MotivationAnalytics';
 
 
 const App = () => {
@@ -128,6 +130,7 @@ const App = () => {
           <Route path="/game" element={<Game />} />
           <Route path="/game2" element={<Game2 />} />
           <Route path="/midi-player" element={<MidiPlayer />} />
+          <Route path="/motivasyonum" element={<Motivasyonum />} />
         </>
       );
     }
@@ -154,6 +157,7 @@ const App = () => {
           <Route path="/fee-management" element={<FeeManagement />} />
           <Route path="/attendance-management" element={<AttendanceManagement />} />
           <Route path="/midi-player" element={<MidiPlayer />} />
+          <Route path="/motivasyonum" element={<Motivasyonum />} />
         </>
       );
     }
@@ -170,6 +174,7 @@ const App = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/announcement-management" element={<AnnouncementManagement />} />
           <Route path="/music-management" element={<MusicManagement />} />
+          <Route path="/motivation-analytics" element={<MotivationAnalytics />} />
           <Route path="/midi-player" element={<MidiPlayer />} />
         </>
       );
@@ -182,6 +187,7 @@ const App = () => {
           <Route path="/fee-management" element={<FeeManagement />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/announcement-management" element={<AnnouncementManagement />} />
+          <Route path="/motivation-analytics" element={<MotivationAnalytics />} />
         </>
       );
     }

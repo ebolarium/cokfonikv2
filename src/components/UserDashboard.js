@@ -53,6 +53,7 @@ const UserDashboard = () => {
   const [unpaidCount, setUnpaidCount] = useState(0);
   const [modalDismissed, setModalDismissed] = useState(false);
   const [attendancePercentage, setAttendancePercentage] = useState(null);
+  const [currentMotivation, setCurrentMotivation] = useState(null);
   const user = JSON.parse(localStorage.getItem('user'));
   const userName = user?.name || '';
 
@@ -104,9 +105,23 @@ const UserDashboard = () => {
     }
   };
 
+  // Motivasyon verilerini çek
+  const fetchCurrentMotivation = async () => {
+    try {
+      const response = await apiClient.get('/motivation/current');
+      if (response.hasData && response.motivation) {
+        setCurrentMotivation(response.motivation.overallHappiness);
+      }
+    } catch (error) {
+      console.log('No motivation data found');
+      // Keep null if no data
+    }
+  };
+
   useEffect(() => {
     if (user?._id) {
       fetchAttendancePercentage();
+      fetchCurrentMotivation();
     }
   }, []);
 
@@ -115,6 +130,20 @@ const UserDashboard = () => {
     if (percentage >= 70) return '#4caf50'; // yeşil
     if (percentage >= 60) return '#ff9800'; // turuncu
     return '#f44336'; // kırmızı
+  };
+
+  // Motivasyon rengini belirle
+  const getMotivationColor = (level) => {
+    if (level <= 3) return '#f44336'; // kırmızı
+    if (level <= 6) return '#ff9800'; // turuncu
+    return '#4caf50'; // yeşil
+  };
+
+  // Motivasyon emoji'sini belirle
+  const getMotivationEmoji = (level) => {
+    if (level <= 3) return '😢';
+    if (level <= 6) return '😐';
+    return '😊';
   };
 
   useEffect(() => {
@@ -344,6 +373,30 @@ const UserDashboard = () => {
 
   // Dashboard Kartları
   const dashboardItems = [
+    {
+      title: 'Motivasyonum',
+      path: '/motivasyonum',
+      icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
+      bgColor: '#fff0f5',
+      content: currentMotivation !== null && (
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: getMotivationColor(currentMotivation),
+              fontWeight: 600,
+              fontSize: '0.9rem',
+            }}
+          >
+            {getMotivationEmoji(currentMotivation)} {currentMotivation}/10
+          </Typography>
+        </Box>
+      )
+    },
     {
       title: 'Yoklama',
       path: '/my-attendance',

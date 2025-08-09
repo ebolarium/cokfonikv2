@@ -37,8 +37,8 @@ const LoadingScreen = () => {
       {/* Loading Animasyonu */}
       <Lottie 
         options={defaultOptions} 
-        height={120} 
-        width={120} 
+        height={300} 
+        width={300} 
         style={{
           margin: '0 auto'
         }}
@@ -51,7 +51,7 @@ const LoadingScreen = () => {
         fontWeight: 500,
         marginTop: '10px'
       }}>
-        Yükleniyor...
+        {/*Yükleniyor...*/}
       </div>
     </div>
   );
