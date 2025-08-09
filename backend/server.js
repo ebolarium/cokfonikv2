@@ -19,7 +19,14 @@ const Announcement = require('./models/Announcement'); // Announcement modeli
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+
+// Conditional JSON parsing - skip for file uploads
+app.use((req, res, next) => {
+  if (req.url.includes('/upload-photo')) {
+    return next();
+  }
+  return express.json({ limit: '10mb' })(req, res, next);
+});
 
 // Uploads ve temp dizinlerini oluştur
 const uploadDir = path.join(__dirname, 'uploads');

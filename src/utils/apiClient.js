@@ -110,12 +110,34 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    return this.request(endpoint, {
-      ...options,
+    // Call fetch directly to avoid getHeaders() which adds Content-Type
+    const url = `${this.baseURL}${endpoint}`;
+    const config = {
       method: 'POST',
-      headers: headers, // Don't set Content-Type for FormData
+      headers: headers, // Only auth header, no Content-Type
       body: formData
-    });
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (response.status === 401) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        throw new Error('Authentication required');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Upload failed: ${url}`, error);
+      throw error;
+    }
   }
 
   // Auth-specific methods
