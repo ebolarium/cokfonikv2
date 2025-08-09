@@ -10,8 +10,6 @@ import {
   IconButton,
   Slider,
   Paper,
-  Snackbar,
-  Alert,
   CircularProgress,
   Fade
 } from '@mui/material';
@@ -19,7 +17,6 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SentimentSatisfiedAltIcon from '@mui/icons-material/SentimentSatisfiedAlt';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import apiClient from '../utils/apiClient';
 
 const Motivasyonum = () => {
@@ -33,11 +30,8 @@ const Motivasyonum = () => {
   // UI State
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [lastSaveTime, setLastSaveTime] = useState(null);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [showSpinner, setShowSpinner] = useState(false);
 
   // Get happiness color based on value
   const getHappinessColor = (value) => {
@@ -77,11 +71,8 @@ const Motivasyonum = () => {
   const saveMotivation = useCallback(async (happiness, fun, music) => {
     // Don't save during initial load
     if (initialLoad) {
-      console.log('Skipping save: initial load');
       return;
     }
-    
-    console.log('Attempting to save motivation:', { happiness, fun, music });
     
     // Validate values before sending
     const validHappiness = Math.round(Math.max(1, Math.min(10, happiness)));
@@ -92,9 +83,8 @@ const Motivasyonum = () => {
     
     // Ensure Fun + Music = 10 (this should already be guaranteed by our handlers)
     if (validFun + validMusic !== 10) {
-      console.warn('Fun + Music validation failed, skipping save');
-      setIsSaving(false); // Important: Reset saving state
-      return; // Don't save invalid data
+      setIsSaving(false);
+      return;
     }
     
     try {
@@ -104,32 +94,17 @@ const Motivasyonum = () => {
         motivationMusic: validMusic
       });
       
-      setLastSaveTime(new Date());
-      setShowSuccess(true);
-      
-      // Auto hide success message
-      setTimeout(() => {
-        setShowSuccess(false);
-      }, 2000);
-      
     } catch (error) {
       console.error('Motivasyon kaydedilirken hata:', error);
-      console.error('Error details:', error.response?.data);
-      
-      // Show error message to user
-      setErrorMessage(
-        error.response?.data?.message || 
-        'Motivasyon kaydedilemedi. Lütfen tekrar deneyin.'
-      );
-      setShowError(true);
-      
-      // Auto hide error message
-      setTimeout(() => {
-        setShowError(false);
-        setErrorMessage('');
-      }, 4000);
+      // Error handling can be added here if needed
+      // For now, just log the error silently
     } finally {
       setIsSaving(false);
+      
+      // Hide spinner after save completes
+      setTimeout(() => {
+        setShowSpinner(false);
+      }, 100); // Small delay to ensure spinner is visible for at least 1 second
     }
   }, [initialLoad]);
 
@@ -138,12 +113,21 @@ const Motivasyonum = () => {
     // Skip saving if we're currently saving or if it's the initial load
     if (isSaving || initialLoad) return;
     
+    // Show spinner immediately when user makes changes
+    setShowSpinner(true);
+    
     const timeoutId = setTimeout(() => {
       saveMotivation(overallHappiness, motivationFun, motivationMusic);
-    }, 1500); // Increased to 1.5 seconds to prevent race conditions
+    }, 1000); // Set to 1 second as requested
 
-    return () => clearTimeout(timeoutId);
-  }, [overallHappiness, motivationFun, motivationMusic, saveMotivation, initialLoad]); // Removed isSaving from dependencies
+    return () => {
+      clearTimeout(timeoutId);
+      // If component unmounts or effect re-runs, hide spinner
+      if (!isSaving) {
+        setTimeout(() => setShowSpinner(false), 100);
+      }
+    };
+  }, [overallHappiness, motivationFun, motivationMusic, saveMotivation, initialLoad, isSaving]);
 
   // Handle Fun slider change (auto-adjust Music)
   const handleFunChange = (event, newValue) => {
@@ -243,6 +227,25 @@ const Motivasyonum = () => {
         
 
       </Paper>
+
+      {/* Saving Spinner Overlay */}
+      <Fade in={showSpinner} timeout={200}>
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: showSpinner ? 'flex' : 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <CircularProgress size={50} sx={{ color: '#ff9800' }} />
+        </Box>
+      </Fade>
 
       {/* Content */}
       <Box sx={{ p: 3, maxWidth: 480, mx: 'auto' }}>

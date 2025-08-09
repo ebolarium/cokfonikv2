@@ -34,9 +34,9 @@ class ApiClient {
     };
 
     try {
-      console.log(`🌐 API Call: ${config.method || 'GET'} ${url}`);
+      // console.log(`🌐 API Call: ${config.method || 'GET'} ${url}`);
       const response = await fetch(url, config);
-      console.log(`📡 Response: ${response.status} ${response.statusText}`);
+      //console.log(`📡 Response: ${response.status} ${response.statusText}`);
       
       // Handle authentication errors
       if (response.status === 401) {

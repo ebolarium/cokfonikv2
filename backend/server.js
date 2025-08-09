@@ -59,8 +59,8 @@ cloudinary.config({
 
 // MongoDB Bağlantısı
 mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+  //useNewUrlParser: true,
+  //useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
 })
@@ -145,7 +145,7 @@ app.use('/api/scores', scoreRoutes);
 try {
   const motivationRoutes = require('./routes/motivationRoutes');
   app.use('/api/motivation', motivationRoutes);
-  console.log('✅ Motivation routes loaded successfully');
+  //console.log('✅ Motivation routes loaded successfully');
 } catch (error) {
   console.error('❌ Error loading motivation routes:', error.message);
   console.error(error.stack);

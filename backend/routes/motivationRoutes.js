@@ -124,44 +124,100 @@ router.get('/analytics', authenticateToken, async (req, res) => {
 
     const today = new Date().toISOString().split('T')[0];
     
-    // Get today's motivations (anonymous)
+    // Get last 30 days of data for trend analysis
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+    
+    // Get historical motivations (last 30 days)
+    const historicalMotivations = await Motivation.find({ 
+      date: { $gte: startDate, $lte: today }
+    }).sort({ date: 1 });
+    
+    // Get today's motivations
     const todayMotivations = await Motivation.find({ date: today });
     
-    if (todayMotivations.length === 0) {
-      return res.json({
-        date: today,
-        participantCount: 0,
-        averages: {
-          overallHappiness: 0,
-          motivationFun: 0,
-          motivationMusic: 0
-        },
-        funMusicRatio: {
-          fun: 50,
-          music: 50
-        }
-      });
-    }
-
-    // Calculate averages
-    const totalHappiness = todayMotivations.reduce((sum, m) => sum + m.overallHappiness, 0);
-    const totalFun = todayMotivations.reduce((sum, m) => sum + m.motivationFun, 0);
-    const totalMusic = todayMotivations.reduce((sum, m) => sum + m.motivationMusic, 0);
+    // Calculate daily trends
+    const dailyTrends = {};
+    historicalMotivations.forEach(motivation => {
+      if (!dailyTrends[motivation.date]) {
+        dailyTrends[motivation.date] = {
+          date: motivation.date,
+          motivations: [],
+          participantCount: 0
+        };
+      }
+      dailyTrends[motivation.date].motivations.push(motivation);
+      dailyTrends[motivation.date].participantCount++;
+    });
     
-    const count = todayMotivations.length;
+    // Calculate averages for each day
+    const trendData = Object.values(dailyTrends).map(day => {
+      const motivations = day.motivations;
+      const count = motivations.length;
+      
+      if (count === 0) {
+        return {
+          date: day.date,
+          participantCount: 0,
+          averageHappiness: 0,
+          averageFun: 0,
+          averageMusic: 0
+        };
+      }
+      
+      const totalHappiness = motivations.reduce((sum, m) => sum + m.overallHappiness, 0);
+      const totalFun = motivations.reduce((sum, m) => sum + m.motivationFun, 0);
+      const totalMusic = motivations.reduce((sum, m) => sum + m.motivationMusic, 0);
+      
+      return {
+        date: day.date,
+        participantCount: count,
+        averageHappiness: Math.round((totalHappiness / count) * 10) / 10,
+        averageFun: Math.round((totalFun / count) * 10) / 10,
+        averageMusic: Math.round((totalMusic / count) * 10) / 10
+      };
+    });
     
-    res.json({
+    // Today's data (current implementation)
+    let todayData = {
       date: today,
-      participantCount: count,
+      participantCount: 0,
       averages: {
-        overallHappiness: Math.round((totalHappiness / count) * 10) / 10, // Round to 1 decimal
-        motivationFun: Math.round((totalFun / count) * 10) / 10,
-        motivationMusic: Math.round((totalMusic / count) * 10) / 10
+        overallHappiness: 0,
+        motivationFun: 0,
+        motivationMusic: 0
       },
       funMusicRatio: {
-        fun: Math.round((totalFun / (totalFun + totalMusic)) * 100),
-        music: Math.round((totalMusic / (totalFun + totalMusic)) * 100)
+        fun: 50,
+        music: 50
       }
+    };
+    
+    if (todayMotivations.length > 0) {
+      const totalHappiness = todayMotivations.reduce((sum, m) => sum + m.overallHappiness, 0);
+      const totalFun = todayMotivations.reduce((sum, m) => sum + m.motivationFun, 0);
+      const totalMusic = todayMotivations.reduce((sum, m) => sum + m.motivationMusic, 0);
+      const count = todayMotivations.length;
+      
+      todayData = {
+        date: today,
+        participantCount: count,
+        averages: {
+          overallHappiness: Math.round((totalHappiness / count) * 10) / 10,
+          motivationFun: Math.round((totalFun / count) * 10) / 10,
+          motivationMusic: Math.round((totalMusic / count) * 10) / 10
+        },
+        funMusicRatio: {
+          fun: Math.round((totalFun / (totalFun + totalMusic)) * 100),
+          music: Math.round((totalMusic / (totalFun + totalMusic)) * 100)
+        }
+      };
+    }
+    
+    res.json({
+      ...todayData,
+      trends: trendData
     });
 
   } catch (error) {

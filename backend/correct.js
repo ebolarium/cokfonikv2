@@ -10,8 +10,8 @@ const Attendance = require('./models/Attendance');
   try {
     // 1) Veritabanına bağlan
     await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      //useNewUrlParser: true,
+      //useUnifiedTopology: true,
     });
     //console.log('MongoDB bağlantısı başarılı.');
 
@@ -41,9 +41,9 @@ const Attendance = require('./models/Attendance');
       const result = await Attendance.updateMany(filter, update);
       if (result.modifiedCount > 0) {
         //console.log(
-          `Event [${eventDoc._id}] "${eventDoc.title}" (${eventDoc.date.toISOString()}): ` +
-          `${result.modifiedCount} Attendance kaydı güncellendi.`
-        );
+        //  `Event [${eventDoc._id}] "${eventDoc.title}" (${eventDoc.date.toISOString()}): ` +
+        //  `${result.modifiedCount} Attendance kaydı güncellendi.`
+        //);
       }
 
       totalUpdated += result.modifiedCount;
