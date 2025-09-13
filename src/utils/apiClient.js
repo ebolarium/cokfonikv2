@@ -45,8 +45,16 @@ class ApiClient {
         // Token expired or invalid, redirect to login
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
-        window.location.href = '/login';
-        throw new Error('Authentication required');
+        
+        // Only redirect if we're not on the login page
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+          return;
+        }
+        
+        // If we're on login page, throw error to be handled by login form
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Authentication failed');
       }
 
       // Handle other errors
@@ -124,8 +132,16 @@ class ApiClient {
       if (response.status === 401) {
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
-        window.location.href = '/login';
-        throw new Error('Authentication required');
+        
+        // Only redirect if we're not on the login page
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+          return;
+        }
+        
+        // If we're on login page, throw error to be handled by login form
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Authentication failed');
       }
 
       if (!response.ok) {

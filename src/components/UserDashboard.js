@@ -373,30 +373,30 @@ const UserDashboard = () => {
 
   // Dashboard Kartları
   const dashboardItems = [
-    {
-      title: 'Motivasyonum',
-      path: '/motivasyonum',
-      icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
-      bgColor: '#fff0f5',
-      content: currentMotivation !== null && (
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              color: getMotivationColor(currentMotivation),
-              fontWeight: 600,
-              fontSize: '0.9rem',
-            }}
-          >
-            {getMotivationEmoji(currentMotivation)} {currentMotivation}/10
-          </Typography>
-        </Box>
-      )
-    },
+    // {
+    //   title: 'Motivasyonum',
+    //   path: '/motivasyonum',
+    //   icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
+    //   bgColor: '#fff0f5',
+    //   content: currentMotivation !== null && (
+    //     <Box sx={{ 
+    //       display: 'flex', 
+    //       alignItems: 'center',
+    //       gap: 1
+    //     }}>
+    //       <Typography 
+    //         variant="body2" 
+    //         sx={{ 
+    //           color: getMotivationColor(currentMotivation),
+    //           fontWeight: 600,
+    //           fontSize: '0.9rem',
+    //         }}
+    //       >
+    //         {getMotivationEmoji(currentMotivation)} {currentMotivation}/10
+    //       </Typography>
+    //     </Box>
+    //   )
+    // },
     {
       title: 'Yoklama',
       path: '/my-attendance',
