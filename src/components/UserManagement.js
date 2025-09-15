@@ -455,6 +455,7 @@ const UserManagement = () => {
               <option value="Şef">Şef</option>
               <option value="Yoklama">Yoklama</option>
               <option value="Aidat">Aidat</option>
+              <option value="Rookie">Rookie</option>
             </TextField>
 
             <TextField
@@ -622,7 +623,8 @@ const UserManagement = () => {
               <option value="Korist">Korist</option>
               <option value="Şef">Şef</option>
               <option value="Yoklama">Yoklama</option>
-              <option value="Aidat">Aidat</option> 
+              <option value="Aidat">Aidat</option>
+              <option value="Rookie">Rookie</option> 
 
             </TextField>
 

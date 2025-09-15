@@ -44,6 +44,7 @@ const Login = () => {
           'Yönetim Kurulu': '/management-dashboard',
           'Şef': '/conductor-dashboard',
           'Korist': '/user-dashboard',
+          'Rookie': '/user-dashboard',
         };
         const redirectPath = roleRedirects[data.user.role] || '/user-dashboard';
         window.location.href = redirectPath;

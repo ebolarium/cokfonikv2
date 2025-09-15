@@ -526,9 +526,14 @@ const UserDashboard = () => {
     },
   ];
 
+  // Hide Nota/Midi button for Rookie users
+  const filteredDashboardItems = user.role === 'Rookie' 
+    ? dashboardItems.filter(item => item.title !== 'Nota/Midi')
+    : dashboardItems;
+
   // Roller baz alınarak ek kartlar ekle
   if (user.role === 'Yoklama') {
-    dashboardItems.push({
+    filteredDashboardItems.push({
       title: 'Yoklama Yönetimi',
       path: '/attendance-management',
       icon: <AssignmentTurnedInIcon style={{ fontSize: 50 }} />,
@@ -537,11 +542,53 @@ const UserDashboard = () => {
   }
 
   if (user.role === 'Aidat') {
-    dashboardItems.push({
+    filteredDashboardItems.push({
       title: 'Aidat Yönetimi',
       path: '/fee-management',
       icon: <PaymentsIcon style={{ fontSize: 50 }} />,
       bgColor: '#e6ffe6',
+    });
+  }
+
+  if (user.role === 'Rookie') {
+    // Add a special welcome card for rookie users at the beginning
+    filteredDashboardItems.unshift({
+      title: 'Hoş Geldin! 🎵',
+      path: '/announcements', // Redirect to announcements for important info
+      icon: <span style={{ fontSize: 50 }}>🎼</span>,
+      bgColor: '#fff3e0',
+      content: (
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 0.5,
+          mt: 1
+        }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#ff6f00',
+              fontWeight: 500,
+              fontSize: '0.8rem',
+              textAlign: 'center'
+            }}
+          >
+            Yeni Üye
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#e65100',
+              fontWeight: 400,
+              fontSize: '0.7rem',
+              textAlign: 'center'
+            }}
+          >
+            Duyuruları kontrol et!
+          </Typography>
+        </Box>
+      )
     });
   }
 
@@ -706,7 +753,7 @@ Neşeyle sağlıkla ve müzikle dolu bir yaş dileriz 🎶🎵🎼🥁🥂\n
         }}
       >
         <Grid container spacing={2}>
-          {dashboardItems.map((item, index) => (
+          {filteredDashboardItems.map((item, index) => (
             <Grid item xs={12} key={index}>
               <Card
                 onClick={() => item.path ? navigate(item.path) : window.open(item.link, '_blank')}

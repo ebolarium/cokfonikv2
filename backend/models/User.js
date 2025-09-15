@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   birthDate: { type: Date, required: true },
   phone: { type: String, required: true },
-  role: { type: String, enum: ['Master Admin', 'Yönetim Kurulu', 'Şef', 'Korist', 'Yoklama', 'Aidat'], default: 'Korist' },
+  role: { type: String, enum: ['Master Admin', 'Yönetim Kurulu', 'Şef', 'Korist', 'Yoklama', 'Aidat', 'Rookie'], default: 'Korist' },
   isActive: { type: Boolean, default: true },
   part: { type: String, enum: ['Soprano', 'Alto', 'Tenor', 'Bas'], default: 'Soprano' },
   approved: { type: Boolean, default: false }, // Admin onayı
