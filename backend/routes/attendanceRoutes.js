@@ -7,7 +7,7 @@ const { authenticateToken, authorize } = require('../middleware/auth');
 const router = express.Router();
 
 // Tüm Devamsızlık Kayıtlarını Getir
-router.get('/', authenticateToken, authorize('Master Admin', 'Yönetim Kurulu', 'Şef'), async (req, res) => {
+router.get('/', authenticateToken, authorize('Master Admin', 'Yönetim Kurulu', 'Şef', 'Aidat'), async (req, res) => {
   try {
     const attendanceRecords = await Attendance.find().populate({
       path: 'userId',
@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
 });
 
 // Devamsızlık Statüsünü Güncelle
-router.put('/:id', authenticateToken, authorize('Master Admin', 'Yönetim Kurulu', 'Şef'), async (req, res) => {
+router.put('/:id', authenticateToken, authorize('Master Admin', 'Yönetim Kurulu', 'Şef', 'Aidat'), async (req, res) => {
   try {
     const { status, excuse } = req.body;
     const updateData = { status };

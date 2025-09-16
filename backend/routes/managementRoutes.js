@@ -3,8 +3,9 @@ const router = express.Router();
 const Fee = require('../models/Fee');
 const Attendance = require('../models/Attendance');
 const User = require('../models/User');
+const { authenticateToken, authorize } = require('../middleware/auth');
 
-router.get('/summary', async (req, res) => {
+router.get('/summary', authenticateToken, authorize('Master Admin', 'Yönetim Kurulu', 'Aidat'), async (req, res) => {
   try {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());

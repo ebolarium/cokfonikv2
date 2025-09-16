@@ -340,7 +340,7 @@ router.put('/:id/unfreeze', authenticateToken, authorize('Master Admin', 'Yönet
 });
 
 // Tüm Kullanıcıları Getir
-router.get('/', authenticateToken, authorize('Master Admin', 'Yönetim Kurulu', 'Şef'), async (req, res) => {
+router.get('/', authenticateToken, authorize('Master Admin', 'Yönetim Kurulu', 'Şef', 'Aidat'), async (req, res) => {
   try {
     const users = await User.find().select('-password'); // Şifreyi hariç tutar
     res.json(users);
