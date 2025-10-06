@@ -81,7 +81,8 @@ const MyAttendance = () => {
       const today = new Date();
       return (
         attendanceDate <= today &&
-        attendance.event?.type === 'Prova' // "Prova" türünü kontrol eder
+        attendance.event?.type === 'Prova' && // "Prova" türünü kontrol eder
+        attendance.status !== 'BEKLEMEDE' // "BEKLEMEDE" durumundaki kayıtları gizle
       );
     })
     .sort((a, b) => new Date(b.date) - new Date(a.date)); // En yakın tarihten en eskiye sıralama
@@ -92,7 +93,8 @@ const MyAttendance = () => {
   const totalWorkdays = attendances.filter((a) => {
     return (
       a.event?.type === 'Prova' && 
-      new Date(a.date) <= today
+      new Date(a.date) <= today &&
+      a.status !== 'BEKLEMEDE'
     );
   }).length;
 
