@@ -15,6 +15,8 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
@@ -47,9 +49,17 @@ const Profile = () => {
     message: '',
     severity: 'success'
   });
+  const [uiTheme, setUiTheme] = useState(localStorage.getItem('uiTheme') || 'old');
 
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleThemeChange = (event) => {
+    const newTheme = event.target.checked ? 'new' : 'old';
+    setUiTheme(newTheme);
+    localStorage.setItem('uiTheme', newTheme);
+    window.dispatchEvent(new CustomEvent('uiThemeChanged', { detail: { theme: newTheme } }));
   };
 
   useEffect(() => {
@@ -403,6 +413,26 @@ const Profile = () => {
             </Box>
           </Box>
         </Box>
+
+        <>
+          <Divider sx={{ my: 3 }} />
+          <Box>
+            <Typography variant="h6" sx={{ mb: 1, fontSize: '1rem' }}>
+              Tema
+            </Typography>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={uiTheme === 'new'}
+                  onChange={handleThemeChange}
+                  color="primary"
+                />
+              }
+              label={uiTheme === 'new' ? 'Yeni' : 'Eski'}
+            />
+
+          </Box>
+        </>
       </Paper>
 
       {/* Düzenleme Dialog'u */}

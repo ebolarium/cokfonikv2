@@ -14,10 +14,12 @@ import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 const BottomNav = ({ role, viewMode, onSwitchView }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const uiTheme = localStorage.getItem('uiTheme') || 'old';
+  const isNewTheme = uiTheme === 'new' && viewMode === 'korist';
 
   // Korist Nav Öğeleri
   const userNavItems = [
-    { label: null, icon: <HomeIcon />, path: '/user-dashboard' },
+    { label: null, icon: <HomeIcon />, path: isNewTheme ? '/new-dashboard' : '/user-dashboard' },
     { label: null, icon: <AssignmentTurnedInIcon />, path: '/my-attendance' },
     { label: null, icon: <AccountBalanceIcon />, path: '/my-fees' },
     { label: null, icon: <EventNoteIcon />, path: '/calendar-view' },
@@ -147,23 +149,25 @@ const BottomNav = ({ role, viewMode, onSwitchView }) => {
       sx={{
         position: 'fixed',
         bottom: 0,
-        width: '100vw',
+        left: 0,
+        right: 0,
+        width: '100%',
         zIndex: 1000,
         // Renk ve çerçeve
         backgroundColor:
           role === 'Şef'
             ? '#9c27b0' // Mor
+            : isNewTheme
+            ? '#1D1B26'
             : viewMode === 'korist'
             ? '#ff5722' // Turuncu
             : '#283593', // Lacivert
-        borderTop:
-          role === 'Şef'
-            ? '4px solid #4a148c'
-            : viewMode === 'korist'
-            ? '4px solid #bf360c'
-            : '4px solid #1a237e',
+        borderTop: 'none',
         color: '#ffffff',
-        height: { xs: '56px', sm: '64px' },
+        height: { xs: 'calc(56px + env(safe-area-inset-bottom))', sm: 'calc(64px + env(safe-area-inset-bottom))' },
+        minHeight: { xs: 'calc(56px + env(safe-area-inset-bottom))', sm: 'calc(64px + env(safe-area-inset-bottom))' },
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        boxSizing: 'border-box',
         transition: 'all 0.3s ease',
         boxShadow: '0 -2px 6px rgba(0, 0, 0, 0.1)',
       }}
@@ -174,18 +178,28 @@ const BottomNav = ({ role, viewMode, onSwitchView }) => {
           icon={item.icon}
           value={index}
           sx={{
-            color:
+            color: isNewTheme ? '#ffffff' : (
               location.pathname === item.path
                 ? role === 'Şef'
                   ? '#ffffff'
                   : viewMode === 'korist'
                   ? '#ffffff'
                   : '#000000'
-                : '#cccccc',
+                : '#cccccc'
+            ),
             marginX: '0px',
             flex: 1,
             minWidth: 0,
             padding: 0,
+            '& .MuiSvgIcon-root': {
+              fontSize: isNewTheme ? '1.7rem' : '1.25rem',
+              fontWeight: location.pathname === item.path ? 700 : 400,
+              transform: location.pathname === item.path ? 'scale(1.1)' : 'none',
+              filter: location.pathname === item.path ? 'drop-shadow(0 0 6px rgba(255,255,255,0.6))' : 'none',
+            },
+            '&.Mui-selected': {
+              color: '#ffffff',
+            },
           }}
         />
       ))}

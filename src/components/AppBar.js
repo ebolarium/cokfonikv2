@@ -140,10 +140,6 @@ const CustomAppBar = ({ userName, viewMode }) => {
             <AccountCircleIcon sx={{ fontSize: '1.2rem' }} />
             Profil
           </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
-            <SettingsIcon sx={{ fontSize: '1.2rem' }} />
-            Ayarlar
-          </MenuItem>
           <Divider sx={{ my: 1 }} />
           <MenuItem onClick={handleLogout} sx={{ color: '#e74c3c !important' }}>
             <LogoutIcon sx={{ fontSize: '1.2rem' }} />

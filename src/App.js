@@ -36,6 +36,7 @@ import MusicManagement from './components/MusicManagement';
 import ResetPassword from './components/ResetPassword';
 import Motivasyonum from './components/Motivasyonum';
 import MotivationAnalytics from './components/MotivationAnalytics';
+import Dashboard2026 from './components/Dashboard2026';
 
 
 const App = () => {
@@ -46,6 +47,7 @@ const App = () => {
   const [userRole, setUserRole] = useState('');
   const [viewMode, setViewMode] = useState('korist');
   const [showLoadingOnStart, setShowLoadingOnStart] = useState(true);
+  const [uiTheme, setUiTheme] = useState('old');
 
   // Okunmamış duyurular
   const fetchUnreadAnnouncements = async () => {
@@ -78,6 +80,9 @@ const App = () => {
       setUserRole(user.role);
     }
 
+    const storedTheme = localStorage.getItem('uiTheme') || 'old';
+    setUiTheme(storedTheme);
+
     if (showLoadingOnStart) {
       const timer = setTimeout(() => {
         setLoading(false);
@@ -88,6 +93,19 @@ const App = () => {
       setLoading(false);
     }
   }, [location, navigate, showLoadingOnStart]);
+
+  useEffect(() => {
+    const handleThemeChange = (event) => {
+      if (event?.detail?.theme) {
+        setUiTheme(event.detail.theme);
+      }
+    };
+
+    window.addEventListener('uiThemeChanged', handleThemeChange);
+    return () => {
+      window.removeEventListener('uiThemeChanged', handleThemeChange);
+    };
+  }, []);
 
   // Görünüm değiştirme
   const handleSwitchView = () => {
@@ -113,7 +131,8 @@ const App = () => {
 
   // Bazı yollar için AppBar/BottomNav gizle
   const excludedPaths = ['/login', '/loading'];
-  const showAppBar = !excludedPaths.includes(location.pathname);
+  const isNewTheme = uiTheme === 'new' && viewMode === 'korist';
+  const showAppBar = !excludedPaths.includes(location.pathname) && !isNewTheme;
   const showBottomNav = !excludedPaths.includes(location.pathname);
 
   // Rotaları çiz
@@ -142,6 +161,10 @@ const App = () => {
           <Route
             path="/user-dashboard"
             element={<UserDashboard fetchUnreadAnnouncements={fetchUnreadAnnouncements} />}
+          />
+          <Route
+            path="/new-dashboard"
+            element={<Dashboard2026 />}
           />
           <Route
             path="/user-new-dashboard"
@@ -222,7 +245,7 @@ const App = () => {
                     userRole === 'Şef'
                       ? '/conductor-dashboard'
                       : viewMode === 'korist'
-                      ? '/user-dashboard'
+                      ? (isNewTheme ? '/new-dashboard' : '/user-dashboard')
                       : userRole === 'Master Admin'
                       ? '/master-admin-dashboard'
                       : userRole === 'Yönetim Kurulu'
