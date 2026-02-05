@@ -1,5 +1,6 @@
 // MyAttendance.js
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -30,9 +31,11 @@ import PieChartIcon from '@mui/icons-material/PieChart';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import apiClient from '../utils/apiClient';
 
 const MyAttendance = () => {
+  const navigate = useNavigate();
   const [attendances, setAttendances] = useState([]);
   const user = JSON.parse(localStorage.getItem('user')); // Kullanıcı bilgisi
   const theme = useTheme();
@@ -207,10 +210,27 @@ const MyAttendance = () => {
 
   if (isNewTheme) {
     return (
-      <Box p={2} sx={{ backgroundColor: '#1D1B26', minHeight: '100vh', marginBottom: '50px', color: '#ffffff' }}>
-        <Typography variant={isSmallScreen ? 'h5' : 'h4'} gutterBottom sx={{ fontWeight: 700 }}>
+      <Box p={2} sx={{ backgroundColor: '#1D1B26', minHeight: '100vh', color: '#ffffff' }}>
+        <Typography variant={isSmallScreen ? 'h5' : 'h4'} gutterBottom sx={{ fontWeight: 700, mb: 2 }}>
           Katılım Geçmişim
         </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => navigate('/new-dashboard')}
+          aria-label="Dashboard'a dön"
+          sx={{
+            minWidth: 40,
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            borderColor: 'rgba(255,255,255,0.5)',
+            color: '#ffffff',
+            mb: 2,
+            padding: 0
+          }}
+        >
+          <ArrowBackIcon />
+        </Button>
 
         <Grid container spacing={2} sx={{ mb: 2 }}>
           {[

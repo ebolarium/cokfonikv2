@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -12,8 +13,10 @@ import {
   ListItemButton,
   Button
 } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const CalendarView = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [open, setOpen] = useState(false);
@@ -131,6 +134,26 @@ const CalendarView = () => {
     return (
       <Box minHeight="100vh" bgcolor="#1D1B26" color="#fff" p={2}>
         <Box maxWidth={520} mx="auto">
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 2 }}>
+            Takvim Görünümü
+          </Typography>
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/new-dashboard')}
+            aria-label="Dashboard'a dön"
+            sx={{
+              minWidth: 40,
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              borderColor: 'rgba(255,255,255,0.5)',
+              color: '#ffffff',
+              mb: 2,
+              padding: 0
+            }}
+          >
+            <ArrowBackIcon />
+          </Button>
           <Card
             sx={{
               padding: 2,

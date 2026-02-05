@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Manrope:wght@300;400;500;600;700&family=Sora:wght@400;600;700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Manrope:wght@300;400;500;600;700&family=Sora:wght@400;600;700&display=swap');
 
 body {
   margin: 0;
@@ -12,4 +12,16 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+body.theme-new,
+body.theme-new * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body.theme-new::-webkit-scrollbar,
+body.theme-new *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }

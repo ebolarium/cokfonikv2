@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Card, CardContent, Chip, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Card, CardContent, Chip, Table, TableBody, TableCell, TableHead, TableRow, Button } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import apiClient from '../utils/apiClient';
 
 const MyFees = () => {
+  const navigate = useNavigate();
   const [fees, setFees] = useState([]);
   const [unpaidCount, setUnpaidCount] = useState(0);
   const user = JSON.parse(localStorage.getItem('user')); // Kullanıcı bilgisi
@@ -65,7 +68,24 @@ const MyFees = () => {
   if (isNewTheme) {
     return (
       <Box p={2} sx={{ backgroundColor: '#1D1B26', minHeight: '100vh', color: '#ffffff' }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>Aidat Durumum</Typography>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 2 }}>Aidat Durumum</Typography>
+        <Button
+          variant="outlined"
+          onClick={() => navigate('/new-dashboard')}
+          aria-label="Dashboard'a dön"
+          sx={{
+            minWidth: 40,
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            borderColor: 'rgba(255,255,255,0.5)',
+            color: '#ffffff',
+            mb: 2,
+            padding: 0
+          }}
+        >
+          <ArrowBackIcon />
+        </Button>
 
         <Card sx={{ backgroundColor: '#2B2B45', borderRadius: 2, mb: 2, color: '#ffffff' }}>
           <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

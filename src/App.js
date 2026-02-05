@@ -135,6 +135,14 @@ const App = () => {
   const showAppBar = !excludedPaths.includes(location.pathname) && !isNewTheme;
   const showBottomNav = !excludedPaths.includes(location.pathname);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.toggle('theme-new', isNewTheme);
+    return () => {
+      document.body.classList.remove('theme-new');
+    };
+  }, [isNewTheme]);
+
   // Rotaları çiz
   const renderRoutes = () => {
     // 1) Eğer userRole = Şef ise, daima Şef rotaları
