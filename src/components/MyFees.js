@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import { Box, Typography, Card, CardContent, Chip, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import apiClient from '../utils/apiClient';
 
 const MyFees = () => {
   const [fees, setFees] = useState([]);
   const [unpaidCount, setUnpaidCount] = useState(0);
   const user = JSON.parse(localStorage.getItem('user')); // Kullanıcı bilgisi
+  const isNewTheme = (localStorage.getItem('uiTheme') || 'old') === 'new';
 
   // Ay isminin ilk harfini büyük, geri kalanını küçük yapan fonksiyon
   const capitalizeMonth = (month) => {
@@ -60,6 +61,52 @@ const MyFees = () => {
 
     fetchMyFees();
   }, [user]);
+
+  if (isNewTheme) {
+    return (
+      <Box p={2} sx={{ backgroundColor: '#1D1B26', minHeight: '100vh', color: '#ffffff' }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>Aidat Durumum</Typography>
+
+        <Card sx={{ backgroundColor: '#2B2B45', borderRadius: 2, mb: 2, color: '#ffffff' }}>
+          <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+              Ödenmemiş Aidat
+            </Typography>
+            <Typography variant="h3" sx={{ fontWeight: 800, mr: 3 }}>{unpaidCount}</Typography>
+          </CardContent>
+        </Card>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {fees.map((fee) => (
+            <Card
+              key={fee._id}
+              sx={{
+                backgroundColor: '#2B2B45',
+                borderRadius: 2,
+                border: '1px solid rgba(255,255,255,0.06)',
+                color: '#ffffff'
+              }}
+            >
+              <CardContent sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                  {`${capitalizeMonth(fee.month)} ${fee.year}`}
+                </Typography>
+                <Chip
+                  size="small"
+                  label={fee.isPaid ? 'Ödendi' : 'Ödenmedi'}
+                  sx={{
+                    backgroundColor: fee.isPaid ? '#16a34a' : '#ef4444',
+                    color: '#ffffff',
+                    fontWeight: 600
+                  }}
+                />
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box p={3}>

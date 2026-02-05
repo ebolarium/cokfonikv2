@@ -20,6 +20,7 @@ import {
   ListItemText,
   Snackbar,
   Alert,
+  Collapse,
 } from '@mui/material';
 import { green, red, yellow, blue } from '@mui/material/colors';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -28,6 +29,7 @@ import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import EventBusyIcon from '@mui/icons-material/EventBusy';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import apiClient from '../utils/apiClient';
 
 const MyAttendance = () => {
@@ -35,6 +37,7 @@ const MyAttendance = () => {
   const user = JSON.parse(localStorage.getItem('user')); // Kullanıcı bilgisi
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isNewTheme = (localStorage.getItem('uiTheme') || 'old') === 'new';
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedAttendance, setSelectedAttendance] = useState(null);
   const [excuseText, setExcuseText] = useState('');
@@ -44,6 +47,7 @@ const MyAttendance = () => {
   const [futureEvents, setFutureEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [futureExcuseText, setFutureExcuseText] = useState('');
+  const [showDetails, setShowDetails] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -102,8 +106,8 @@ const MyAttendance = () => {
   const daysAttended = attendances.filter((a) => a.status === 'GELDI' && a.event?.type === 'Prova').length;
   const daysMissed = attendances.filter((a) => a.status === 'GELMEDI' && a.event?.type === 'Prova').length;
   const daysExcused = attendances.filter((a) => a.status === 'MAZERETLI' && a.event?.type === 'Prova').length;
-  const absencePercentage = totalWorkdays > 0
-  ? (((daysMissed + daysExcused) / totalWorkdays) * 100).toFixed(2)
+  const attendancePercentage = totalWorkdays > 0
+  ? ((daysAttended / totalWorkdays) * 100).toFixed(2)
   : '0';
   // Grafik Verisi
   const pieData = [
@@ -113,6 +117,7 @@ const MyAttendance = () => {
   ];
 
   const COLORS = [green[500], red[500], yellow[700]];
+
 
   const handleExcuseSubmit = async () => {
     if (!selectedAttendance || !excuseText.trim()) return;
@@ -199,6 +204,301 @@ const MyAttendance = () => {
       });
     }
   };
+
+  if (isNewTheme) {
+    return (
+      <Box p={2} sx={{ backgroundColor: '#1D1B26', minHeight: '100vh', marginBottom: '50px', color: '#ffffff' }}>
+        <Typography variant={isSmallScreen ? 'h5' : 'h4'} gutterBottom sx={{ fontWeight: 700 }}>
+          Katılım Geçmişim
+        </Typography>
+
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          {[
+            { label: 'Katıldın', value: `${daysAttended} / ${totalWorkdays}` },
+            { label: 'Devam %', value: `${attendancePercentage}%` },
+          ].map((item) => (
+            <Grid item xs={6} sm={3} key={item.label}>
+              <Card sx={{ backgroundColor: '#2B2B45', borderRadius: 2 }}>
+                <CardContent sx={{ p: 1.5 }}>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                    {item.label}
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: '#ffffff', fontWeight: 700 }}>
+                    {item.value}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Box mt={3}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Button
+              variant="contained"
+              color="warning"
+              onClick={(e) => {
+                e.stopPropagation();
+                fetchFutureEvents();
+                setOpenFutureDialog(true);
+              }}
+              sx={{
+                borderRadius: '999px',
+                width: 112,
+                height: 112,
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0.5,
+                boxShadow: 4,
+              }}
+            >
+              <EventBusyIcon />
+              Mazeret Bildir
+            </Button>
+          </Box>
+
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              cursor: 'pointer'
+            }}
+            onClick={() => setShowDetails(prev => !prev)}
+          >
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Detaylı Kayıtlar
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                {showDetails ? 'Gizle' : 'Göster'}
+              </Typography>
+              <ExpandMoreIcon
+                sx={{
+                  color: '#ffffff',
+                  transform: showDetails ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease'
+                }}
+              />
+            </Box>
+          </Box>
+
+          <Collapse in={showDetails}>
+            <Box sx={{ mt: 2, position: 'relative', pl: 2, borderLeft: '1px solid rgba(255,255,255,0.15)' }}>
+              {pastAndTodayAttendances.length > 0 ? (
+                pastAndTodayAttendances.map((attendance) => {
+                  const statusColor =
+                    attendance.status === 'GELDI'
+                      ? '#22c55e'
+                      : attendance.status === 'GELMEDI'
+                      ? '#ef4444'
+                      : attendance.status === 'MAZERETLI'
+                      ? '#f59e0b'
+                      : '#94a3b8';
+
+                  return (
+                    <Box
+                      key={attendance._id}
+                      sx={{ position: 'relative', mb: 2, pl: 2, cursor: attendance.status === 'MAZERETLI' ? 'pointer' : 'default' }}
+                      onClick={() => handleExcuseClick(attendance)}
+                    >
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          left: -6,
+                          top: 6,
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          backgroundColor: statusColor,
+                        }}
+                      />
+                      <Typography variant="body2">
+                        {new Date(attendance.date).toLocaleDateString('tr-TR', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                        {attendance.status}
+                      </Typography>
+                      {attendance.status === 'GELMEDI' && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          sx={{ ml: 2, mt: 1, borderColor: 'rgba(255,255,255,0.4)', color: '#ffffff' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAttendance(attendance);
+                            setOpenDialog(true);
+                          }}
+                        >
+                          Mazeret Bildir
+                        </Button>
+                      )}
+                    </Box>
+                  );
+                })
+              ) : (
+                <Typography variant="body2" align="center" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                  Hiç devamsızlık kaydı bulunamadı.
+                </Typography>
+              )}
+            </Box>
+          </Collapse>
+        </Box>
+
+        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Mazeret Bildirimi</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" gutterBottom>
+              {selectedAttendance && new Date(selectedAttendance.date).toLocaleDateString()} tarihli devamsızlık için mazeret bildirimi
+            </Typography>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Mazeret Açıklaması"
+              type="text"
+              fullWidth
+              multiline
+              rows={4}
+              value={excuseText}
+              onChange={(e) => setExcuseText(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDialog(false)} color="primary">
+              İptal
+            </Button>
+            <Button onClick={handleExcuseSubmit} color="primary" variant="contained">
+              Gönder
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={openExcuseDialog} onClose={() => setOpenExcuseDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            Mazeret Detayı - {selectedExcuse && new Date(selectedExcuse.date).toLocaleDateString()}
+          </DialogTitle>
+          <DialogContent>
+            <Typography>{selectedExcuse?.excuse}</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenExcuseDialog(false)} color="primary">
+              Kapat
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={openFutureDialog}
+          onClose={() => {
+            setOpenFutureDialog(false);
+            setSelectedEvent(null);
+            setFutureExcuseText('');
+          }}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            {selectedEvent ? 'Mazeret Bildirimi' : 'Gelemeyeceğiniz Provayı Seçin'}
+          </DialogTitle>
+          <DialogContent>
+            {!selectedEvent ? (
+              <List>
+                {futureEvents.length > 0 ? (
+                  futureEvents.map((event) => (
+                    <ListItem
+                      key={event._id}
+                      button
+                      onClick={() => setSelectedEvent(event)}
+                      sx={{
+                        borderBottom: '1px solid #eee',
+                        '&:hover': {
+                          backgroundColor: '#f5f5f5',
+                        },
+                      }}
+                    >
+                      <ListItemText
+                        primary={new Date(event.date).toLocaleDateString('tr-TR', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      />
+                    </ListItem>
+                  ))
+                ) : (
+                  <Typography variant="body2" sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+                    Gelecek prova bulunmuyor.
+                  </Typography>
+                )}
+              </List>
+            ) : (
+              <>
+                <Typography variant="subtitle1" gutterBottom>
+                  {new Date(selectedEvent.date).toLocaleDateString('tr-TR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </Typography>
+                <TextField
+                  autoFocus
+                  margin="dense"
+                  label="Mazeret Açıklaması"
+                  type="text"
+                  fullWidth
+                  multiline
+                  rows={4}
+                  value={futureExcuseText}
+                  onChange={(e) => setFutureExcuseText(e.target.value)}
+                />
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            {selectedEvent ? (
+              <>
+                <Button onClick={() => setSelectedEvent(null)} color="primary">
+                  Geri
+                </Button>
+                <Button onClick={handleFutureExcuseSubmit} color="primary" variant="contained" disabled={!futureExcuseText.trim()}>
+                  Gönder
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setOpenFutureDialog(false)} color="primary">
+                Kapat
+              </Button>
+            )}
+          </DialogActions>
+        </Dialog>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert
+            onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+            severity={snackbar.severity}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
+    );
+  }
 
   return (
     <Box p={2} sx={{ backgroundColor: '#f5f5f5', minHeight: '100vh', marginBottom: '50px' }}>
@@ -295,7 +595,7 @@ const MyAttendance = () => {
           </Card>
         </Grid>
 
-        {/* Devamsızlık Yüzdesi Kartı */}
+        {/* Devam Yüzdesi Kartı */}
         <Grid item xs={6} sm={6} md={3}>
           <Card
             sx={{
@@ -316,9 +616,9 @@ const MyAttendance = () => {
               <Avatar sx={{ bgcolor: '#00bcd4', margin: '0 auto', mb: 1, width: 40, height: 40 }}>
                 <PieChartIcon fontSize="small" />
               </Avatar>
-              <Typography variant="subtitle2">Devamsızlık %</Typography>
+              <Typography variant="subtitle2">Devam %</Typography>
               <Typography variant="h6" color="textPrimary">
-                {absencePercentage}%
+                {attendancePercentage}%
               </Typography>
             </CardContent>
           </Card>
