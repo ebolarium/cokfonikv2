@@ -1,126 +1,132 @@
-const nodemailer = require('nodemailer');
+﻿const RESEND_API_URL = "https://api.resend.com/emails";
 
-// Email transporter configuration
-const createTransporter = () => {
-  // Gmail için örnek konfigürasyon
-  // Diğer email sağlayıcıları için farklı ayarlar kullanılabilir
-  return nodemailer.createTransport({
-    service: 'gmail', // Gmail kullanıyoruz
-    auth: {
-      user: process.env.EMAIL_USER, // Gmail adresi
-      pass: process.env.EMAIL_PASSWORD // Gmail app password
-    }
-  });
+const getResendConfig = () => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM || process.env.EMAIL_FROM;
+
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is missing.");
+  }
+
+  if (!fromEmail) {
+    throw new Error("RESEND_FROM (or EMAIL_FROM) is missing.");
+  }
+
+  return { apiKey, fromEmail };
 };
 
-// Alternatif olarak SMTP konfigürasyonu
-const createSMTPTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
+const sendWithResend = async ({ to, subject, html, text }) => {
+  const { apiKey, fromEmail } = getResendConfig();
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(RESEND_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [to],
+        subject,
+        html,
+        text,
+      }),
+      signal: controller.signal,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const message = data?.message || data?.error || "Resend request failed.";
+      throw new Error(`Resend ${response.status}: ${message}`);
     }
-  });
+
+    return { success: true, messageId: data.id };
+  } finally {
+    clearTimeout(timeout);
+  }
 };
 
-// Şifre sıfırlama maili gönder
+// Send password reset email
 const sendPasswordResetEmail = async (email, resetToken, userName) => {
   try {
-    const transporter = createTransporter();
-    
-    const resetURL = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-    
-    const mailOptions = {
-      from: {
-        name: 'Çokfonik Koro',
-        address: process.env.EMAIL_USER
-      },
-      to: email,
-      subject: 'Şifre Sıfırlama Talebi - Çokfonik',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #1976d2; color: white; padding: 20px; text-align: center;">
-            <h1>Çokfonik Koro</h1>
-          </div>
-          
-          <div style="padding: 30px; background-color: #f9f9f9;">
-            <h2>Merhaba ${userName},</h2>
-            
-            <p>Hesabınız için şifre sıfırlama talebinde bulundunuz. Aşağıdaki bağlantıya tıklayarak şifrenizi sıfırlayabilirsiniz:</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetURL}" 
-                 style="background-color: #1976d2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                Şifremi Sıfırla
-              </a>
-            </div>
-            
-            <p><strong>Önemli:</strong> Bu bağlantı güvenlik sebebiyle sadece 1 saat geçerlidir.</p>
-            
-            <p>Eğer şifre sıfırlama talebinde bulunmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
-            
-            <hr style="margin: 30px 0;">
-            
-            <p style="color: #666; font-size: 12px;">
-              Bu otomatik bir e-postadır, lütfen yanıtlamayın.<br>
-              Sorunlarınız için: <a href="mailto:${process.env.EMAIL_USER}">${process.env.EMAIL_USER}</a>
-            </p>
-          </div>
-        </div>
-      `,
-      text: `
-        Merhaba ${userName},
-        
-        Hesabınız için şifre sıfırlama talebinde bulundunuz.
-        
-        Şifrenizi sıfırlamak için aşağıdaki bağlantıyı kullanın:
-        ${resetURL}
-        
-        Bu bağlantı 1 saat geçerlidir.
-        
-        Eğer bu talebi yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.
-        
-        --
-        Çokfonik Koro
-      `
-    };
+    if (!process.env.FRONTEND_URL) {
+      throw new Error("FRONTEND_URL is missing.");
+    }
 
-    const result = await transporter.sendMail(mailOptions);
-    console.log('Password reset email sent:', result.messageId);
-    return { success: true, messageId: result.messageId };
-    
+    const resetURL = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    const subject = "Sifre Sifirlama Talebi - Cokfonik";
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #1976d2; color: white; padding: 20px; text-align: center;">
+          <h1>Cokfonik Koro</h1>
+        </div>
+
+        <div style="padding: 30px; background-color: #f9f9f9;">
+          <h2>Merhaba ${userName || ""},</h2>
+          <p>Hesabiniz icin sifre sifirlama talebinde bulundunuz.</p>
+          <p>Asagidaki baglantiya tiklayarak sifrenizi sifirlayabilirsiniz:</p>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetURL}"
+               style="background-color: #1976d2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              Sifremi Sifirla
+            </a>
+          </div>
+
+          <p><strong>Onemli:</strong> Bu baglanti sadece 1 saat gecerlidir.</p>
+          <p>Eger bu talebi siz yapmadiysaniz bu e-postayi gormezden gelebilirsiniz.</p>
+        </div>
+      </div>
+    `;
+    const text = `
+Merhaba ${userName || ""},
+
+Hesabiniz icin sifre sifirlama talebinde bulundunuz.
+Sifrenizi sifirlamak icin su baglantiyi kullanin:
+${resetURL}
+
+Bu baglanti 1 saat gecerlidir.
+`;
+
+    const result = await sendWithResend({
+      to: email,
+      subject,
+      html,
+      text,
+    });
+
+    console.log("Password reset email sent via Resend:", result.messageId);
+    return result;
   } catch (error) {
-    console.error('Email sending error:', error);
+    console.error("Email sending error:", error);
     return { success: false, error: error.message };
   }
 };
 
-// Test email gönderimi
+// Send test email
 const sendTestEmail = async (email) => {
   try {
-    const transporter = createTransporter();
-    
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    const result = await sendWithResend({
       to: email,
-      subject: 'Çokfonik - Email Test',
-      html: '<h1>Email sistemi çalışıyor!</h1><p>Bu bir test e-postasıdır.</p>',
-      text: 'Email sistemi çalışıyor! Bu bir test e-postasıdır.'
-    };
+      subject: "Cokfonik - Email Test",
+      html: "<h1>Email sistemi calisiyor!</h1><p>Bu bir test e-postasidir.</p>",
+      text: "Email sistemi calisiyor! Bu bir test e-postasidir.",
+    });
 
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
-    
+    return result;
   } catch (error) {
-    console.error('Test email error:', error);
+    console.error("Test email error:", error);
     return { success: false, error: error.message };
   }
 };
 
 module.exports = {
   sendPasswordResetEmail,
-  sendTestEmail
+  sendTestEmail,
 };
