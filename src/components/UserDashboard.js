@@ -9,13 +9,7 @@ import {
   Card,
   CardContent,
   Modal,
-  Backdrop,
-  Fade,
   Button,
-  Badge,
-  Checkbox,
-  FormControlLabel,
-  CircularProgress,
 } from '@mui/material';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -31,22 +25,6 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import apiClient from '../utils/apiClient';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
-
-// Yardımcı Fonksiyon: Base64 stringi Uint8Array'e çevirir
-const urlBase64ToUint8Array = (base64String) => {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-};
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -67,12 +45,6 @@ const UserDashboard = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [phase, setPhase] = useState('idle'); // 'idle' | 'fadingIn' | 'steady' | 'fadingOut'
 
-  // Push Bildirim Modal State
-  const [pushModalOpen, setPushModalOpen] = useState(false);
-  const [pushPermission, setPushPermission] = useState(false);
-
-  // Public VAPID Key
-  const PUBLIC_VAPID_KEY = process.env.REACT_APP_PUBLIC_VAPID_KEY;
 
   // Devam yüzdesini hesapla
   const fetchAttendancePercentage = async () => {
@@ -295,68 +267,6 @@ const UserDashboard = () => {
       setShowConfetti(false);
       setPhase('idle');
     }, 1000); // 1sn sonra DOM'dan kaldır
-  };
-
-  // Push Bildirim İzni Modali Açma
-  useEffect(() => {
-    const pushPermissionKey = `pushPermission_${user?._id}`;
-    const permissionStatus = localStorage.getItem(pushPermissionKey);
-
-    if (!permissionStatus) {
-      setPushModalOpen(true);
-    }
-  }, [user?._id]);
-
-  // Push Bildirim İzni Alma
-  const handlePushPermissionChange = async (event) => {
-    const { checked } = event.target;
-    setPushPermission(checked);
-
-    if (checked) {
-      try {
-        if ('serviceWorker' in navigator) {
-          const registration = await navigator.serviceWorker.ready;
-
-          const permission = await Notification.requestPermission();
-          if (permission === 'granted') {
-            if (!PUBLIC_VAPID_KEY) {
-              console.error('PUBLIC_VAPID_KEY tanımlı değil.');
-              alert('Sunucu tarafından sağlanan VAPID anahtarı bulunamadı.');
-              return;
-            }
-
-            const subscription = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
-            });
-
-            // Aboneliği backend'e gönder
-            try {
-              await apiClient.post('/subscribe', subscription);
-              //console.log('Push aboneliği başarılı.');
-              const pushPermissionKey = `pushPermission_${user?._id}`;
-              localStorage.setItem(pushPermissionKey, 'granted');
-            } catch (error) {
-              console.error('Abonelik backend\'e gönderilemedi:', error);
-              alert('Push aboneliği başarısız oldu. Lütfen tekrar deneyin.');
-            }
-          } else {
-            console.error('Push bildirimi izni reddedildi.');
-            const pushPermissionKey = `pushPermission_${user?._id}`;
-            localStorage.setItem(pushPermissionKey, 'denied');
-          }
-        }
-      } catch (error) {
-        console.error('Push aboneliği başarısız:', error);
-        alert('Push aboneliği sırasında bir hata oluştu. Lütfen tekrar deneyin.');
-      }
-    } else {
-      // Kullanıcı push bildirimlerini reddederse veya iptal ederse
-      const pushPermissionKey = `pushPermission_${user?._id}`;
-      localStorage.setItem(pushPermissionKey, 'denied');
-    }
-
-    setPushModalOpen(false);
   };
 
   // Aidat sayısı güncelleme event listener'ı
@@ -592,24 +502,6 @@ const UserDashboard = () => {
     });
   }
 
-  // Public VAPID Key'in Doğruluğunu Kontrol Etme
-  useEffect(() => {
-    if (PUBLIC_VAPID_KEY) {
-      try {
-        // VAPID key'i doğru şekilde decode edilebiliyorsa
-        urlBase64ToUint8Array(PUBLIC_VAPID_KEY);
-      } catch (error) {
-        console.error('VAPID Public Key doğru formatta değil:', error);
-      }
-    } else {
-      console.error('PUBLIC_VAPID_KEY tanımlı değil.');
-    }
-  }, [PUBLIC_VAPID_KEY]);
-
-  // Public VAPID Key'i Loglama (Debug için)
-  useEffect(() => {
-  }, [PUBLIC_VAPID_KEY]);
-
   return (
     <Box minHeight="100vh" position="relative">
       {/* Konfeti & Mesaj */}
@@ -689,60 +581,6 @@ Neşeyle sağlıkla ve müzikle dolu bir yaş dileriz 🎶🎵🎼🥁🥂\n
             Tamam
           </Button>
         </Box>
-      </Modal>
-
-      {/* Push Bildirim İzni Modali */}
-      <Modal
-        open={pushModalOpen}
-        onClose={() => setPushModalOpen(false)}
-        closeAfterTransition
-        BackdropComponent={Backdrop}
-        BackdropProps={{ timeout: 500 }}
-      >
-        <Fade in={pushModalOpen}>
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              bgcolor: 'background.paper',
-              boxShadow: 24,
-              p: 4,
-              borderRadius: 2,
-              maxWidth: 400,
-              width: '90%',
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              Bildirim İzinleri
-            </Typography>
-            <Typography variant="body2" gutterBottom>
-              Uygulamanızdan güncellemeler ve duyurular almak için push bildirimlerine izin vermek ister misiniz?
-            </Typography>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={pushPermission}
-                  onChange={handlePushPermissionChange}
-                  name="pushPermission"
-                  color="primary"
-                />
-              }
-              label="Push bildirimlerine izin veriyorum"
-            />
-            <Box mt={2} display="flex" justifyContent="flex-end">
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => setPushModalOpen(false)}
-                disabled={!pushPermission}
-              >
-                Onayla
-              </Button>
-            </Box>
-          </Box>
-        </Fade>
       </Modal>
 
       <Box 

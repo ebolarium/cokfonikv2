@@ -3,8 +3,6 @@
 const express = require('express');
 const router = express.Router();
 const Announcement = require('../models/Announcement'); // Duyuru modeli
-const Subscription = require('../models/Subscription'); // Abonelik modeli
-const webPush = require('web-push');
 
 // POST /api/announcements - Yeni Duyuru Oluşturma
 router.post('/', async (req, res) => {
@@ -22,30 +20,6 @@ router.post('/', async (req, res) => {
     });
 
     await newAnnouncement.save();
-
-    // Tüm abonelikleri alın
-    const subscriptions = await Subscription.find();
-
-    if (subscriptions.length > 0) {
-      const payload = JSON.stringify({
-        title: newAnnouncement.title,
-        body: newAnnouncement.content,
-        url: '/', // Bildirim tıklandığında açılacak URL
-      });
-
-      // Tüm abonelere bildirim gönder
-      const sendNotifications = subscriptions.map(sub => {
-        return webPush.sendNotification(sub, payload).catch(error => {
-          console.error('Bildirim gönderilemedi:', error);
-          // Hata durumunda aboneliği silebilirsiniz (endpoint geçersiz olabilir)
-          if (error.statusCode === 410 || error.statusCode === 404) {
-            return Subscription.findOneAndDelete({ endpoint: sub.endpoint });
-          }
-        });
-      });
-
-      await Promise.all(sendNotifications);
-    }
 
     res.status(201).json({ message: 'Duyuru başarıyla oluşturuldu.', announcement: newAnnouncement });
   } catch (error) {
@@ -183,60 +157,4 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ message: 'Duyuru silinemedi.' });
   }
 });
-
-
-// POST /api/fees/send-notifications - Aidat Bildirimlerini Threshold'a Göre Gönder
-router.post('/fees/send-notifications', async (req, res) => {
-  const { threshold, notificationTitle, notificationBody } = req.body;
-
-  if (!threshold || threshold < 1) {
-    return res.status(400).json({ message: 'Geçerli bir threshold değeri girin.' });
-  }
-
-  try {
-    const now = new Date();
-    const targetDate = new Date();
-    targetDate.setMonth(now.getMonth() - threshold);
-
-    // Threshold'a göre ödenmemiş aidatları bul
-    const unpaidFees = await Fee.find({
-      isPaid: false,
-      year: targetDate.getFullYear(),
-      month: targetDate.toLocaleString('tr-TR', { month: 'long' }),
-    }).populate('userId', 'name email');
-
-    if (unpaidFees.length === 0) {
-      return res.status(200).json({ message: 'Bildirim gönderilecek kullanıcı yok.' });
-    }
-
-    // Tüm abonelikleri alın
-    const subscriptions = await Subscription.find();
-
-    if (subscriptions.length > 0) {
-      const payload = JSON.stringify({
-        title: notificationTitle || 'Aidat Hatırlatması',
-        body: notificationBody || 'Aidatınızı ödemediğiniz görünüyor. Lütfen ödeme yapın.',
-        url: '/my-fees',
-      });
-
-      // Bildirimleri gönder
-      const sendNotifications = subscriptions.map(sub =>
-        webPush.sendNotification(sub, payload).catch(error => {
-          if (error.statusCode === 410 || error.statusCode === 404) {
-            return Subscription.findOneAndDelete({ endpoint: sub.endpoint });
-          }
-        })
-      );
-
-      await Promise.all(sendNotifications);
-    }
-
-    res.status(200).json({ message: `${unpaidFees.length} kullanıcıya bildirim gönderildi.` });
-  } catch (error) {
-    console.error('Aidat bildirimleri gönderilirken hata:', error);
-    res.status(500).json({ message: 'Bildirim gönderilemedi.' });
-  }
-});
-
-
 module.exports = router;

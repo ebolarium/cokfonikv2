@@ -6,7 +6,6 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const cron = require('node-cron');
 const path = require('path');
-const webPush = require('web-push');
 const multer = require('multer');
 const fs = require('fs');
 
@@ -101,21 +100,6 @@ mongoose.connect(process.env.MONGO_URI, {
   process.exit(1);
 });
 
-// VAPID anahtarlarını ayarlayın
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-
-if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-  console.error('VAPID_PUBLIC_KEY ve VAPID_PRIVATE_KEY ortam değişkenleri ayarlanmalı.');
-  process.exit(1);
-}
-
-webPush.setVapidDetails(
-  'mailto:barisboga@gmail.com',
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
-
 // API Rotaları
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
@@ -131,10 +115,6 @@ const managementRoutes = require('./routes/managementRoutes');
 app.use('/api/management', managementRoutes);
 const pieceRoutes = require('./routes/pieceRoutes');
 app.use('/api/pieces', pieceRoutes);
-
-// Yeni Subscription Routes'ı Ekleyin
-const subscriptionRoutes = require('./routes/subscriptionRoutes');
-app.use('/api', subscriptionRoutes); // /api/subscribe
 
 const scoreRoutes = require('./routes/scoreRoutes');
 app.use('/api/scores', scoreRoutes);

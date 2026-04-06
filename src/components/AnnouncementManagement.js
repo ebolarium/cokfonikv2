@@ -21,23 +21,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import apiClient from '../utils/apiClient';
 
-const PUBLIC_VAPID_KEY = process.env.REACT_APP_PUBLIC_VAPID_KEY;
-
-const urlBase64ToUint8Array = (base64String) => {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-};
-
 const AnnouncementManagement = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [title, setTitle] = useState('');
@@ -184,44 +167,7 @@ const AnnouncementManagement = () => {
 
   useEffect(() => {
     fetchAnnouncements();
-
-    // Push aboneliği
-    const subscribeUser = async () => {
-      if ('serviceWorker' in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.ready;
-
-          const permission = await Notification.requestPermission();
-          if (permission !== 'granted') {
-            console.error('Push bildirimi izni reddedildi.');
-            return;
-          }
-
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
-          });
-
-          // Aboneliği backend'e gönder
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/subscribe`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(subscription),
-          });
-
-          if (!response.ok) {
-            console.error('Abonelik backend\'e gönderilemedi.');
-          }
-        } catch (error) {
-          console.error('Push aboneliği başarısız:', error);
-        }
-      }
-    };
-
-    subscribeUser();
-  }, [PUBLIC_VAPID_KEY, userId]);
+  }, [userId]);
 
   return (
     <Box p={3} bgcolor="#f9f9f9" minHeight="100vh">
