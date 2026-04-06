@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { S3Client, DeleteObjectCommand, ListObjectsV2Command, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const requiredEnvVars = [
   'S3_BUCKET',
@@ -122,12 +123,26 @@ async function deleteObject(key) {
   );
 }
 
+async function getSignedObjectUrl(key, expiresIn = 3600) {
+  const resolvedKey = key.startsWith(normalizedPrefix) ? key : withPrefix(key);
+
+  return getSignedUrl(
+    client,
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: resolvedKey,
+    }),
+    { expiresIn }
+  );
+}
+
 module.exports = {
   bucket,
   buildPublicUrl,
   client,
   deleteObject,
   getContentType,
+  getSignedObjectUrl,
   listObjects,
   normalizedPrefix,
   stripPrefix,

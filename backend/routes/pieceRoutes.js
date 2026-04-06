@@ -5,7 +5,7 @@ const ListeningRecord = require('../models/ListeningRecord');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const { buildPublicUrl, deleteObject, listObjects, uploadFile } = require('../utils/s3Storage');
+const { deleteObject, getSignedObjectUrl, listObjects, uploadFile } = require('../utils/s3Storage');
 
 // Multer yapılandırması - geçici dosyalar için
 const upload = multer({ dest: 'temp/' });
@@ -26,7 +26,8 @@ const FOLDERS = {
 let storageCache = {
   lastSync: null,
   pieces: null,
-  syncInProgress: false
+  syncInProgress: false,
+  objectKeysByTitle: null,
 };
 
 // Cache'in geçerli olup olmadığını kontrol et (5 dakika)
@@ -72,6 +73,7 @@ const syncWithStorage = async (forceSyncWithStorage = false) => {
 
     // Parçaları organize et
     const pieces = {};
+    const objectKeysByTitle = {};
 
     // Her klasördeki ses dosyalarını işle
     allAudioFiles.forEach((result, index) => {
@@ -87,8 +89,10 @@ const syncWithStorage = async (forceSyncWithStorage = false) => {
             title,
             audioUrls: {}
           };
+          objectKeysByTitle[title] = {};
         }
-        pieces[title].audioUrls[currentPart] = buildPublicUrl(fullPath);
+        pieces[title].audioUrls[currentPart] = fullPath;
+        objectKeysByTitle[title][currentPart] = fullPath;
       });
     });
 
@@ -118,6 +122,7 @@ const syncWithStorage = async (forceSyncWithStorage = false) => {
 
     // Cache'i güncelle
     storageCache.pieces = pieces;
+    storageCache.objectKeysByTitle = objectKeysByTitle;
     storageCache.lastSync = Date.now();
     storageCache.syncInProgress = false;
 
@@ -129,11 +134,28 @@ const syncWithStorage = async (forceSyncWithStorage = false) => {
   }
 };
 
+const signPieceAudioUrls = async (piece) => {
+  const pieceObj = typeof piece.toObject === 'function' ? piece.toObject() : { ...piece };
+  const audioUrls = pieceObj.audioUrls || {};
+
+  pieceObj.audioUrls = Object.fromEntries(
+    await Promise.all(
+      Object.entries(audioUrls).map(async ([part, value]) => {
+        if (!value) {
+          return [part, value];
+        }
+
+        return [part, await getSignedObjectUrl(value)];
+      })
+    )
+  );
+
+  return pieceObj;
+};
+
 // Tüm parçaları getir
 router.get('/', async (req, res) => {
   try {
-    const pieces = await Piece.find().sort('-createdAt');
-    
     // Force sync parametresi varsa zorla senkronize et
     if (req.query.forceSync === 'true') {
       //console.log('Zorla senkronizasyon istendi...');
@@ -142,8 +164,10 @@ router.get('/', async (req, res) => {
       // Normal durumda cache kullan
       await syncWithStorage(false);
     }
-    
-    res.json(pieces);
+
+    const pieces = await Piece.find().sort('-createdAt');
+    const signedPieces = await Promise.all(pieces.map(signPieceAudioUrls));
+    res.json(signedPieces);
   } catch (error) {
     console.error('Parçalar getirilirken hata:', error);
     res.status(500).json({ 
@@ -167,13 +191,12 @@ router.get('/my-pieces', async (req, res) => {
     const pieces = await Piece.find().sort('-createdAt');
     
     // Her parça için kullanıcının partına uygun URL'i seç
-    const filteredPieces = pieces.map(piece => {
-      const pieceObj = piece.toObject();
+    const filteredPieces = (await Promise.all(pieces.map(signPieceAudioUrls))).map(pieceObj => {
       
       // Önce kullanıcının kendi partisindeki ses dosyasını kontrol et
       // Yoksa genel ses dosyasını kullan
-      const userPartUrl = piece.audioUrls[userPart.toLowerCase()];
-      const generalUrl = piece.audioUrls.general;
+      const userPartUrl = pieceObj.audioUrls[userPart.toLowerCase()];
+      const generalUrl = pieceObj.audioUrls.general;
       
       // Sadece kullanıcının partına ait veya genel ses dosyası varsa parçayı göster
       if (userPartUrl || generalUrl) {
@@ -251,7 +274,7 @@ router.delete('/:id', async (req, res) => {
     try {
       // S3'ten tüm part dosyalarını sil
       const deletePromises = Object.entries(piece.audioUrls)
-        .filter(([_, url]) => url) // Sadece URL'i olan partları sil
+        .filter(([_, objectKey]) => objectKey) // Sadece dosyası olan partları sil
         .map(async ([part]) => {
           const matchingObjects = await listObjects(`${FOLDERS.AUDIO}/${part}/${piece.title}`);
           await Promise.all(
