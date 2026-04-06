@@ -7,9 +7,10 @@ const Attendance = require('../models/Attendance');
 const Event = require('../models/Event');
 const multer = require('multer');
 const path = require('path');
-const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
+const sharp = require('sharp');
 const { authenticateToken, authorize } = require('../middleware/auth');
+const { uploadFile } = require('../utils/s3Storage');
 
 const router = express.Router();
 
@@ -54,6 +55,7 @@ const upload = multer({
 // Profil Fotoğrafı Yükleme Endpoint
 router.post('/:id/upload-photo', authenticateToken, upload.single('profilePhoto'), async (req, res) => {
   let tempFilePath = null;
+  let processedFilePath = null;
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'Lütfen bir fotoğraf seçin.' });
@@ -61,6 +63,7 @@ router.post('/:id/upload-photo', authenticateToken, upload.single('profilePhoto'
 
     const userId = req.params.id;
     tempFilePath = req.file.path;
+    processedFilePath = path.join(tempDir, `${userId}-profile.jpg`);
 
     // Kullanıcıyı bul
     const user = await User.findById(userId);
@@ -68,26 +71,27 @@ router.post('/:id/upload-photo', authenticateToken, upload.single('profilePhoto'
       throw new Error('Kullanıcı bulunamadı.');
     }
 
-    // Cloudinary'ye yükle
-    const uploadResult = await cloudinary.uploader.upload(tempFilePath, {
-      folder: 'profile-photos',
-      public_id: userId, // Sadece userId kullan
-      overwrite: true,
-      resource_type: 'image',
-      transformation: [{
-        width: 400,
-        height: 400,
-        crop: 'fill',
-        gravity: 'face'
-      }],
-      format: 'jpg',
-      quality: 'auto'
+    await sharp(tempFilePath)
+      .resize(400, 400, {
+        fit: 'cover',
+        position: 'centre',
+      })
+      .jpeg({
+        quality: 82,
+        mozjpeg: true,
+      })
+      .toFile(processedFilePath);
+
+    // Hetzner Object Storage'a yükle
+    const uploadResult = await uploadFile({
+      filePath: processedFilePath,
+      key: `profile-photos/${userId}.jpg`,
+      contentType: 'image/jpeg',
+      cacheControl: 'public, max-age=86400',
     });
 
-    // Eski fotoğrafı silmeye gerek yok çünkü overwrite: true kullanıyoruz
-
     // Kullanıcı profilini güncelle
-    const photoUrl = uploadResult.secure_url;
+    const photoUrl = uploadResult.url;
     user.profilePhoto = photoUrl;
     await user.save();
 
@@ -109,6 +113,13 @@ router.post('/:id/upload-photo', authenticateToken, upload.single('profilePhoto'
         fs.unlinkSync(tempFilePath);
       } catch (unlinkError) {
         console.error('Geçici dosya silinirken hata:', unlinkError);
+      }
+    }
+    if (processedFilePath && fs.existsSync(processedFilePath)) {
+      try {
+        fs.unlinkSync(processedFilePath);
+      } catch (unlinkError) {
+        console.error('İşlenmiş dosya silinirken hata:', unlinkError);
       }
     }
   }

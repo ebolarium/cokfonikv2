@@ -2,15 +2,15 @@ const express = require('express');
 const router = express.Router();
 const Piece = require('../models/Piece');
 const ListeningRecord = require('../models/ListeningRecord');
-const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const { buildPublicUrl, deleteObject, listObjects, uploadFile } = require('../utils/s3Storage');
 
 // Multer yapılandırması - geçici dosyalar için
 const upload = multer({ dest: 'temp/' });
 
-// Cloudinary klasör yapısı
+// S3 klasör yapısı
 const FOLDERS = {
   AUDIO: 'audio',
   PARTS: {
@@ -23,7 +23,7 @@ const FOLDERS = {
 };
 
 // Cache mekanizması
-let cloudinaryCache = {
+let storageCache = {
   lastSync: null,
   pieces: null,
   syncInProgress: false
@@ -31,45 +31,38 @@ let cloudinaryCache = {
 
 // Cache'in geçerli olup olmadığını kontrol et (5 dakika)
 const isCacheValid = () => {
-  if (!cloudinaryCache.lastSync) return false;
+  if (!storageCache.lastSync) return false;
   const fiveMinutes = 5 * 60 * 1000;
-  return (Date.now() - cloudinaryCache.lastSync) < fiveMinutes;
+  return (Date.now() - storageCache.lastSync) < fiveMinutes;
 };
 
-// Cloudinary'den parçaları getir ve senkronize et
-const syncWithCloudinary = async (forceSyncWithCloudinary = false) => {
+// S3'ten parçaları getir ve senkronize et
+const syncWithStorage = async (forceSyncWithStorage = false) => {
   try {
     // Cache kontrolü
-    if (!forceSyncWithCloudinary && isCacheValid()) {
+    if (!forceSyncWithStorage && isCacheValid()) {
       //console.log('Cache geçerli, senkronizasyon atlanıyor...');
-      return cloudinaryCache.pieces;
+      return storageCache.pieces;
     }
 
     // Senkronizasyon zaten devam ediyorsa bekle
-    if (cloudinaryCache.syncInProgress) {
+    if (storageCache.syncInProgress) {
       //console.log('Senkronizasyon zaten devam ediyor, bekleniyor...');
-      while (cloudinaryCache.syncInProgress) {
+      while (storageCache.syncInProgress) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-      return cloudinaryCache.pieces;
+      return storageCache.pieces;
     }
 
-    cloudinaryCache.syncInProgress = true;
-    //console.log('Cloudinary senkronizasyonu başlıyor...');
+    storageCache.syncInProgress = true;
+    //console.log('S3 senkronizasyonu başlıyor...');
     
     // Tüm ses klasörlerinden dosyaları al
     const allAudioFiles = await Promise.all(
       Object.values(FOLDERS.PARTS).map(async part => {
         try {
-          //console.log(`${part} klasörü için dosyalar alınıyor...`);
-          const result = await cloudinary.api.resources({
-            resource_type: 'video',
-            type: 'upload',
-            prefix: `${FOLDERS.AUDIO}/${part}`,
-            max_results: 500
-          });
-          //console.log(`${part} klasöründe ${result.resources.length} dosya bulundu`);
-          return result;
+          const resources = await listObjects(`${FOLDERS.AUDIO}/${part}/`);
+          return { resources };
         } catch (error) {
           console.error(`${part} klasörü için hata:`, error);
           return { resources: [] };
@@ -84,9 +77,10 @@ const syncWithCloudinary = async (forceSyncWithCloudinary = false) => {
     allAudioFiles.forEach((result, index) => {
       const currentPart = Object.values(FOLDERS.PARTS)[index];
       result.resources.forEach(resource => {
-        const fullPath = resource.public_id;
+        const fullPath = resource.Key;
         const pathParts = fullPath.split('/');
-        const title = pathParts[pathParts.length - 1];
+        const fileName = pathParts[pathParts.length - 1];
+        const title = path.parse(fileName).name;
         
         if (!pieces[title]) {
           pieces[title] = { 
@@ -94,7 +88,7 @@ const syncWithCloudinary = async (forceSyncWithCloudinary = false) => {
             audioUrls: {}
           };
         }
-        pieces[title].audioUrls[currentPart] = resource.secure_url;
+        pieces[title].audioUrls[currentPart] = buildPublicUrl(fullPath);
       });
     });
 
@@ -102,9 +96,9 @@ const syncWithCloudinary = async (forceSyncWithCloudinary = false) => {
     const existingPieces = await Piece.find({});
     
     // Silinen parçaları tespit et ve kaldır
-    const cloudinaryTitles = new Set(Object.keys(pieces));
+    const storageTitles = new Set(Object.keys(pieces));
     for (const piece of existingPieces) {
-      if (!cloudinaryTitles.has(piece.title)) {
+      if (!storageTitles.has(piece.title)) {
         await Piece.findByIdAndDelete(piece._id);
       }
     }
@@ -123,14 +117,14 @@ const syncWithCloudinary = async (forceSyncWithCloudinary = false) => {
     }
 
     // Cache'i güncelle
-    cloudinaryCache.pieces = pieces;
-    cloudinaryCache.lastSync = Date.now();
-    cloudinaryCache.syncInProgress = false;
+    storageCache.pieces = pieces;
+    storageCache.lastSync = Date.now();
+    storageCache.syncInProgress = false;
 
     return pieces;
   } catch (error) {
-    cloudinaryCache.syncInProgress = false;
-    console.error('Cloudinary senkronizasyon hatası:', error);
+    storageCache.syncInProgress = false;
+    console.error('S3 senkronizasyon hatası:', error);
     throw error;
   }
 };
@@ -143,10 +137,10 @@ router.get('/', async (req, res) => {
     // Force sync parametresi varsa zorla senkronize et
     if (req.query.forceSync === 'true') {
       //console.log('Zorla senkronizasyon istendi...');
-      await syncWithCloudinary(true);
+      await syncWithStorage(true);
     } else {
       // Normal durumda cache kullan
-      await syncWithCloudinary(false);
+      await syncWithStorage(false);
     }
     
     res.json(pieces);
@@ -167,7 +161,7 @@ router.get('/my-pieces', async (req, res) => {
       return res.status(400).json({ message: 'Geçersiz parti' });
     }
 
-    await syncWithCloudinary();
+    await syncWithStorage();
     
     // Tüm parçaları al
     const pieces = await Piece.find().sort('-createdAt');
@@ -210,24 +204,26 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ message: 'Geçersiz part seçimi' });
     }
 
-    // Cloudinary'ye yükle
-    const uploadResult = await cloudinary.uploader.upload(file.path, {
-      resource_type: 'video',
-      folder: `${FOLDERS.AUDIO}/${part}`,
-      public_id: title,
-      overwrite: true
+    const extension = path.extname(file.originalname || '').toLowerCase();
+    const objectKey = `${FOLDERS.AUDIO}/${part}/${title}${extension}`;
+
+    // S3'e yükle
+    const uploadResult = await uploadFile({
+      filePath: file.path,
+      key: objectKey,
+      cacheControl: 'public, max-age=31536000, immutable',
     });
 
     // Geçici dosyayı sil
     fs.unlinkSync(file.path);
 
     // Cache'i geçersiz kıl ve zorla senkronize et
-    cloudinaryCache.lastSync = null;
-    await syncWithCloudinary(true);
+    storageCache.lastSync = null;
+    await syncWithStorage(true);
 
     res.status(201).json({ 
       message: 'Dosya başarıyla yüklendi',
-      url: uploadResult.secure_url 
+      url: uploadResult.url 
     });
   } catch (error) {
     console.error('Yükleme hatası:', error);
@@ -253,30 +249,22 @@ router.delete('/:id', async (req, res) => {
     //console.log('Parça bulundu:', piece.title);
 
     try {
-      // Cloudinary'den tüm part dosyalarını sil
+      // S3'ten tüm part dosyalarını sil
       const deletePromises = Object.entries(piece.audioUrls)
         .filter(([_, url]) => url) // Sadece URL'i olan partları sil
-        .map(([part, url]) => {
-          const publicId = `${FOLDERS.AUDIO}/${part}/${piece.title}`;
-          //console.log(`Cloudinary'den siliniyor: ${publicId}`);
-          return cloudinary.uploader.destroy(publicId, { resource_type: 'video' })
-            .then(result => {
-              //console.log(`${publicId} silindi:`, result);
-              return result;
-            })
-            .catch(error => {
-              console.error(`${publicId} silinirken hata:`, error);
-              return null;
-            });
+        .map(async ([part]) => {
+          const matchingObjects = await listObjects(`${FOLDERS.AUDIO}/${part}/${piece.title}`);
+          await Promise.all(
+            matchingObjects.map((object) => deleteObject(object.Key))
+          );
+          return matchingObjects.length;
         });
 
-      // Cloudinary silme işlemlerini bekle
-      const cloudinaryResults = await Promise.all(deletePromises);
-      //console.log('Cloudinary silme sonuçları:', cloudinaryResults);
+      await Promise.all(deletePromises);
 
-    } catch (cloudinaryError) {
-      console.error('Cloudinary silme hatası:', cloudinaryError);
-      // Cloudinary hatası olsa bile MongoDB'den silmeye devam et
+    } catch (storageError) {
+      console.error('S3 silme hatası:', storageError);
+      // S3 hatası olsa bile MongoDB'den silmeye devam et
     }
 
     try {
@@ -419,7 +407,7 @@ router.get('/statistics', async (req, res) => {
 // Manuel senkronizasyon endpoint'i
 router.post('/sync', async (req, res) => {
   try {
-    const updatedCount = await syncWithCloudinary();
+    const updatedCount = await syncWithStorage();
     res.json({ 
       message: 'Senkronizasyon başarılı',
       updatedCount 

@@ -9,7 +9,6 @@ const path = require('path');
 const webPush = require('web-push');
 const multer = require('multer');
 const fs = require('fs');
-const cloudinary = require('cloudinary').v2;
 
 dotenv.config(); // .env dosyasını proje kök dizininden yükler
 
@@ -54,14 +53,6 @@ const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
-});
-
-// Cloudinary Configuration
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true
 });
 
 // MongoDB Bağlantısı
